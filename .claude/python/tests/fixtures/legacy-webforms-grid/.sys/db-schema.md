@@ -1,6 +1,6 @@
-# Schéma DB — legacy-wpf-minimal
+# Schéma DB — legacy-webforms-grid
 
-**Date extraction** : 2026-06-11T12:00:21Z
+**Date extraction** : 2026-06-11T06:05:14Z
 **Type DB** : Unknown
 **Complétude** : basic
 **Sources** : (no schema source found)
