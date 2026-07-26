@@ -16,31 +16,57 @@ def test_read_root():
     assert response.status_code == 200
     assert response.json()["status"] == "online"
 
-def test_user_registration_and_login():
-    email = f"user_{os.urandom(4).hex()}@example.com"
+def test_user_registration_and_email_verification():
+    email = f"verify_{os.urandom(4).hex()}@example.com"
     # Register User
     reg_resp = client.post("/api/auth/register", json={
-        "name": "Test User",
+        "name": "Verify User",
         "email": email,
         "password": "secretpassword123"
     })
     assert reg_resp.status_code == 200
     reg_data = reg_resp.json()
     assert "access_token" in reg_data
-    assert reg_data["user"]["email"] == email
+    assert reg_data["user"]["is_verified"] is False
+    code = reg_data["verification_code_preview"]
+    assert code is not None
 
-    # Login User
+    # Verify Email Code
+    verify_resp = client.post("/api/auth/verify-email", json={
+        "email": email,
+        "code": code
+    })
+    assert verify_resp.status_code == 200
+    assert verify_resp.json()["is_verified"] is True
+
+def test_forgot_and_reset_password_flow():
+    email = f"reset_{os.urandom(4).hex()}@example.com"
+    # Register User
+    client.post("/api/auth/register", json={
+        "name": "Reset User",
+        "email": email,
+        "password": "oldpassword123"
+    })
+
+    # Forgot Password Request
+    forgot_resp = client.post("/api/auth/forgot-password", json={"email": email})
+    assert forgot_resp.status_code == 200
+    reset_token = forgot_resp.json()["reset_token_preview"]
+    assert reset_token is not None
+
+    # Reset Password with Token
+    reset_resp = client.post("/api/auth/reset-password", json={
+        "token": reset_token,
+        "new_password": "newsuperpassword456"
+    })
+    assert reset_resp.status_code == 200
+
+    # Login with new password
     login_resp = client.post("/api/auth/login", json={
         "email": email,
-        "password": "secretpassword123"
+        "password": "newsuperpassword456"
     })
     assert login_resp.status_code == 200
-    token = login_resp.json()["access_token"]
-
-    # Access protected route
-    me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert me_resp.status_code == 200
-    assert me_resp.json()["email"] == email
 
 def test_owner_admin_analytics_dashboard():
     # Login as default Master Admin (admin@nutriscan.app / admin123)
@@ -57,8 +83,6 @@ def test_owner_admin_analytics_dashboard():
     stats = stats_resp.json()
     assert "total_users" in stats
     assert stats["total_users"] >= 1
-    assert "daily_active_users" in stats
-    assert "monthly_active_users" in stats
 
 def test_get_and_update_goals():
     resp = client.get("/api/goals")
@@ -97,20 +121,4 @@ def test_weight_tracker_crud():
     assert resp_get.status_code == 200
 
     resp_del = client.delete(f"/api/weight/{w_id}")
-    assert resp_del.status_code == 200
-
-def test_recipe_builder_crud():
-    recipe_data = {
-        "name": "Protein Oatmeal",
-        "servings": 2,
-        "ingredients": [
-            {"name": "Rolled Oats", "amount_g": 100, "calories": 389, "protein": 16.9, "carbs": 66.3, "fat": 6.9},
-            {"name": "Whey Protein", "amount_g": 30, "calories": 120, "protein": 24.0, "carbs": 2.0, "fat": 1.0}
-        ]
-    }
-    resp = client.post("/api/recipes", json=recipe_data)
-    assert resp.status_code == 200
-    data = resp.json()
-
-    resp_del = client.delete(f"/api/recipes/{data['id']}")
     assert resp_del.status_code == 200

@@ -11,6 +11,10 @@ class User(Base):
     name = Column(String, default="User")
     is_admin = Column(Boolean, default=False)
     is_premium = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+    reset_password_token = Column(String, nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_login_at = Column(DateTime, default=datetime.datetime.utcnow)
 

@@ -40,6 +40,58 @@ export async function registerUser(name, email, password) {
   return data;
 }
 
+export async function verifyEmail(email, code) {
+  const res = await fetch(`${API_BASE}/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Verification failed');
+  }
+  return await res.json();
+}
+
+export async function resendVerificationCode(email) {
+  const res = await fetch(`${API_BASE}/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Failed to resend code');
+  }
+  return await res.json();
+}
+
+export async function requestForgotPassword(email) {
+  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Forgot password request failed');
+  }
+  return await res.json();
+}
+
+export async function resetPassword(token, newPassword) {
+  const res = await fetch(`${API_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Reset password failed');
+  }
+  return await res.json();
+}
+
 export async function loginUser(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',

@@ -33,6 +33,7 @@ def get_admin_stats(
             name=u.name,
             email=u.email,
             is_admin=u.is_admin,
+            is_verified=bool(u.is_verified),
             created_at=u.created_at.strftime("%Y-%m-%d %H:%M") if u.created_at else "",
             last_login_at=u.last_login_at.strftime("%Y-%m-%d %H:%M") if u.last_login_at else ""
         ) for u in recent
@@ -60,6 +61,7 @@ def get_all_users(
             name=u.name,
             email=u.email,
             is_admin=u.is_admin,
+            is_verified=bool(u.is_verified),
             created_at=u.created_at.strftime("%Y-%m-%d %H:%M") if u.created_at else "",
             last_login_at=u.last_login_at.strftime("%Y-%m-%d %H:%M") if u.last_login_at else ""
         ) for u in users

@@ -35,6 +35,18 @@ def init_db():
             inspector = inspect(engine)
             tables = inspector.get_table_names()
 
+            # Ensure users table has verification and password reset columns
+            if "users" in tables:
+                ucols = [c["name"] for c in inspector.get_columns("users")]
+                if "is_verified" not in ucols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 0"))
+                if "verification_code" not in ucols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN verification_code VARCHAR"))
+                if "reset_password_token" not in ucols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN reset_password_token VARCHAR"))
+                if "reset_token_expires" not in ucols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN reset_token_expires DATETIME"))
+
             # Ensure user_profiles has required columns
             if "user_profiles" in tables:
                 cols = [c["name"] for c in inspector.get_columns("user_profiles")]
@@ -67,11 +79,15 @@ def init_db():
                 password_hash=hash_password("admin123"),
                 name="Owner Admin",
                 is_admin=True,
-                is_premium=True
+                is_premium=True,
+                is_verified=True
             )
             db.add(admin)
             db.commit()
             print("✅ Default Owner Admin initialized: admin@nutriscan.app / admin123")
+        else:
+            admin_user.is_verified = True
+            db.commit()
     except Exception as e:
         print(f"Admin seeding exception: {e}")
     finally:

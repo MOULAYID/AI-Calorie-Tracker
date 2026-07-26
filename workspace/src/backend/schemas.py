@@ -11,12 +11,24 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6)
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=6)
+
 class UserResponse(BaseModel):
     id: int
     name: str
     email: str
     is_admin: bool
     is_premium: bool
+    is_verified: bool
     created_at: Any
 
     class Config:
@@ -26,6 +38,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+    verification_code_preview: Optional[str] = None # Returned for demo/testing preview
 
 # Admin Schemas
 class AdminUserItem(BaseModel):
@@ -33,6 +46,7 @@ class AdminUserItem(BaseModel):
     name: str
     email: str
     is_admin: bool
+    is_verified: bool
     created_at: str
     last_login_at: str
 
