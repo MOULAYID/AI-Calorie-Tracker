@@ -1,130 +1,30 @@
-﻿################################################################################
-# Ce fichier .gitignore a été automatiquement créé par Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs
-
-# Python bytecode (sdd_hooks, sdd_lib, sdd_scripts)
+# Python bytecode
 **/__pycache__/
 **/*.pyc
 **/*.pyo
 
-# MkDocs build output (statique, généré par `mkdocs build`)
-# Build local + déploiement manuel sur Azure / intranet, jamais committé.
-/site/
-
-# Framework smoke cache (fast-path Stop hook)
-.claude/.cache/
-
-# Cache de build du transpileur multi-harnais (.sdd/.build/ = jetable, régénéré
-# par harness_build.py).
-.sdd/.build/
-
-# ============================================================================
-# Façades générées (harness_build.py) — MIGRATION-PLAN Phase 1 close 2026-07-25.
-# ============================================================================
-# `.sdd/` = SSoT unique édité à la main (agents, commands, rules, skills,
-# templates, stacks, docs, python, providers). Les 3 harnais consomment ce
-# foyer neutre via des FAÇADES générées :
-#   - `.claude/{agents,commands,rules}/` + `.claude/CLAUDE.md` : matérialisées
-#     par ClaudeAdapter (le harness natif lit sur disque).
-#   - `.codex/` : matérialisée par CodexAdapter (AGENTS.md + prompts/ + config.toml).
-#   - `.gemini/` : matérialisée par GeminiAdapter (GEMINI.md + commands/*.toml).
-#
-# Régénération : `python .sdd/harness_build.py --harness <h> --provider <p>
-#                 --out .sdd/.build/<h> --agents-only --commands-only
-#                 --memory-only --rules-only [--deploy]`
-# bootstrap.py appelle cette commande au clone du repo. La garde
-# `protect_framework.py` refuse toute édition manuelle (agents produit) —
-# seul harness_build.py peut écrire dans ces répertoires.
-.claude/agents/
-.claude/commands/
-.claude/rules/
-.claude/CLAUDE.md
-# .codex/ et .gemini/ sont COMMITÉS — façades multi-harness versionnées pour
-# que Codex et Gemini CLI fonctionnent out-of-the-box après git clone.
-# Seul .claude/ reste gitignored (régénéré par session_start hook Claude Code).
-
-# Workspace runtime SDD (scaffolding, secrets, projets générés) — jamais commité.
-# stack.md porte DB_PASSWORD / AUTH_JWT_SECRET en clair (CLAUDE.md §9), les
-# projets sous src/ portent .env / appsettings / config runtime. `workspace/`
-# couvre déjà tout ; les entrées granulaires ci-dessous sont explicites pour
-# les fichiers porteurs de secrets (garde anti-fuite, test_generated_project_gitignore_template).
-workspace/
-workspace/db/
-workspace/console/
-workspace/stack/
-workspace/src/*/.env
-workspace/src/*/appsettings*.json
-workspace/src/*/config/default.json
-
-# Sauvegardes de config pré-audit (nettoyage hooks 2026-07-25, ADR governance-protection-hooks-wiring)
-.claude/settings*.pre-hooks-audit.bak
-
-# Pytest coverage artefact (run-local)
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Ruff linter cache (transient, run-local)
-.ruff_cache/
+# Node modules & build artifacts
+**/node_modules/
+**/dist/
+**/.pytest_cache/
 **/.ruff_cache/
-
-# setuptools editable install metadata (régénéré par `pip install -e`)
 *.egg-info/
 **/*.egg-info/
-
-# Python virtualenv (local, restituable via python -m venv + pip install -e)
 .venv/
-**/.venv/
 
-# v7.0.0 cleanup 2026-05-20 — node_modules orphelins (pas de package.json
-# racine ni dans workspace/src/*). Ignore tout node_modules récursif
-# par sécurité (le projet généré dans workspace/src/ a son propre
-# node_modules quand frontend Node — toujours ignoré).
-node_modules/
-**/node_modules/
+# Environment secrets & database files
+workspace/db/*.db
+workspace/stack/stack.md
+.env
+*.env.local
 
-# Runtime transient — scheduler lock (regénéré, ne pas committer)
-.claude/scheduled_tasks.lock
-
-# Scripts dev ad-hoc oubliés à la racine (PO/dev workflow)
-/.tmp_*.py
-
-# Orphan crash forensic traces (atomic_write .sddtmp pattern + .json.tmp)
-**/*.sddtmp
-**/.sys/.validation/*.tmp
-
-# MCPB bundle build artifact (régénérable via python -m sdd_mcp.build_mcpb)
-.sdd/python/.mcpb-build/
-.sdd/python/*.mcpb
-
-# .NET / Java / Node build outputs (au cas où des projets seraient générés à la racine)
-**/bin/
-**/obj/
-**/dist/
-**/build/
-**/.gradle/
-**/target/
-
-# IDE
+# IDE & OS files
+.vs/
+.vscode/
 .idea/
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Settings local Claude Code (additionalDirectories cross-poste)
-.claude/settings.local.json
-
-# Reverse engineering fixtures: .sys/ artifacts are GENERATED, not source.
-# Les tests copient les fixtures en tmp_path (tests/fixture_utils.py) — un
-# .sys/ local sous fixtures/ est un résidu, jamais une baseline (audit 2026-06-11).
-.sdd/python/tests/fixtures/*/.sys/
-
-# Backup transient de sync_parity_snapshots (régénéré à chaque sync — le
-# fichier autoritatif _parity_snapshots.json reste versionné)
-.sdd/python/sdd_reverse/_parity_snapshots.prev.json
+# Frame cache
+.claude/.cache/
+.sdd/.build/
