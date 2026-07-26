@@ -8,41 +8,54 @@ import WeeklyAnalytics from './components/WeeklyAnalytics';
 import UserProfileModal from './components/UserProfileModal';
 import WeightTracker from './components/WeightTracker';
 import RecipeBuilderModal from './components/RecipeBuilderModal';
+import AuthModal from './components/AuthModal';
+import AdminDashboard from './components/AdminDashboard';
+import { AdBanner, InterstitialAdModal } from './components/AdBanner';
 import { 
   fetchGoals, 
   fetchFoodLogs, 
   addFoodLog, 
   deleteFoodLog, 
   fetchWaterLog, 
-  logWater 
+  logWater,
+  fetchCurrentUser,
+  setAuthToken,
+  getAuthToken
 } from './services/api';
-import { LayoutDashboard, BarChart3, Camera, Scale, ChefHat } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Camera, Scale, ChefHat, User, ShieldCheck, LogOut } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | analytics | weight
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | analytics | weight | admin
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [foodLogs, setFoodLogs] = useState([]);
   const [waterMl, setWaterMl] = useState(0);
 
   // Modal Open States
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAiScanOpen, setIsAiScanOpen] = useState(false);
   const [isBarcodeScanOpen, setIsBarcodeScanOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isRecipeOpen, setIsRecipeOpen] = useState(false);
+  const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const [targetMeal, setTargetMeal] = useState('breakfast');
 
-  // Initial Data Fetching
+  // Initial Auth Check & Data Fetching
   useEffect(() => {
-    async function loadGoals() {
+    async function initAuth() {
+      if (getAuthToken()) {
+        const u = await fetchCurrentUser();
+        if (u) setCurrentUser(u);
+      }
       const p = await fetchGoals();
       setUserProfile(p);
     }
-    loadGoals();
+    initAuth();
   }, []);
 
-  // Fetch Day Data when selectedDate changes
+  // Fetch Day Data when selectedDate or currentUser changes
   useEffect(() => {
     async function loadDayData() {
       const logs = await fetchFoodLogs(selectedDate);
@@ -51,11 +64,15 @@ export default function App() {
       setWaterMl(water);
     }
     loadDayData();
-  }, [selectedDate]);
+  }, [selectedDate, currentUser]);
 
   const handleAddLog = async (item) => {
     const newLog = await addFoodLog(item);
     setFoodLogs(prev => [...prev, newLog]);
+    // Show interstitial ad after AI meal scan
+    if (item.source === 'ai_scan') {
+      setIsAdModalOpen(true);
+    }
   };
 
   const handleDeleteLog = async (id) => {
@@ -73,6 +90,13 @@ export default function App() {
     setIsSearchOpen(true);
   };
 
+  const handleLogout = () => {
+    setAuthToken(null);
+    setCurrentUser(null);
+    setActiveTab('dashboard');
+    window.location.reload();
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
@@ -84,8 +108,8 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
       />
 
-      {/* Quick Feature Ribbon */}
-      <div className="max-w-4xl w-full mx-auto px-4 pt-3 flex justify-between items-center text-xs">
+      {/* Top Auth & Navigation Ribbon */}
+      <div className="max-w-4xl w-full mx-auto px-4 pt-3 flex flex-wrap justify-between items-center text-xs gap-2">
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('dashboard')}
@@ -103,21 +127,54 @@ export default function App() {
             onClick={() => setActiveTab('weight')}
             className={`px-3 py-1 rounded-xl font-bold transition ${activeTab === 'weight' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-900 text-slate-400'}`}
           >
-            Weight Tracker
+            Weight & Fat
           </button>
+          
+          {currentUser?.is_admin && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`px-3 py-1 rounded-xl font-bold transition flex items-center gap-1 ${activeTab === 'admin' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-900 text-amber-400'}`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Owner Cockpit
+            </button>
+          )}
         </div>
 
-        <button
-          onClick={() => setIsRecipeOpen(true)}
-          className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl font-bold border border-slate-800 flex items-center gap-1.5 transition"
-        >
-          <ChefHat className="w-3.5 h-3.5" />
-          Recipes
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsRecipeOpen(true)}
+            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl font-bold border border-slate-800 flex items-center gap-1 transition"
+          >
+            <ChefHat className="w-3.5 h-3.5" />
+            Recipes
+          </button>
+
+          {currentUser ? (
+            <div className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800">
+              <span className="font-bold text-slate-200">{currentUser.name}</span>
+              <button onClick={handleLogout} className="text-slate-500 hover:text-rose-400 ml-1" title="Sign Out">
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className="px-3 py-1 bg-emerald-500 text-slate-950 rounded-xl font-extrabold flex items-center gap-1 transition active:scale-95"
+            >
+              <User className="w-3.5 h-3.5" />
+              Sign In
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 pt-4 pb-24">
+        
+        {/* Ad Banner on Dashboard */}
+        {activeTab === 'dashboard' && <AdBanner type="banner" />}
+
         {activeTab === 'dashboard' && (
           <Dashboard
             foodLogs={foodLogs}
@@ -132,6 +189,7 @@ export default function App() {
         )}
         {activeTab === 'analytics' && <WeeklyAnalytics selectedDate={selectedDate} />}
         {activeTab === 'weight' && <WeightTracker userProfile={userProfile} />}
+        {activeTab === 'admin' && <AdminDashboard />}
       </main>
 
       {/* Bottom Navigation Dock (Mobile-first UX) */}
@@ -170,18 +228,37 @@ export default function App() {
             <span className="text-[10px]">Weekly</span>
           </button>
 
-          <button
-            onClick={() => setIsRecipeOpen(true)}
-            className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition"
-          >
-            <ChefHat className="w-5 h-5" />
-            <span className="text-[10px]">Recipes</span>
-          </button>
+          {currentUser?.is_admin ? (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex flex-col items-center gap-1 transition ${activeTab === 'admin' ? 'text-amber-400 font-bold' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span className="text-[10px]">Owner</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsRecipeOpen(true)}
+              className="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-300 transition"
+            >
+              <ChefHat className="w-5 h-5" />
+              <span className="text-[10px]">Recipes</span>
+            </button>
+          )}
 
         </div>
       </nav>
 
       {/* Modals */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={(u) => {
+          setCurrentUser(u);
+          if (u.is_admin) setActiveTab('admin');
+        }}
+      />
+
       <TypingSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -216,6 +293,11 @@ export default function App() {
         onClose={() => setIsRecipeOpen(false)}
         selectedDate={selectedDate}
         onLogAdded={handleAddLog}
+      />
+
+      <InterstitialAdModal
+        isOpen={isAdModalOpen}
+        onClose={() => setIsAdModalOpen(false)}
       />
 
     </div>

@@ -1,6 +1,51 @@
-from typing import Optional, List
-from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field, EmailStr
 
+# Auth Schemas
+class UserRegister(BaseModel):
+    name: str = "User"
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    is_admin: bool
+    is_premium: bool
+    created_at: Any
+
+    class Config:
+        from_attributes = True
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+# Admin Schemas
+class AdminUserItem(BaseModel):
+    id: int
+    name: str
+    email: str
+    is_admin: bool
+    created_at: str
+    last_login_at: str
+
+class AdminStatsResponse(BaseModel):
+    total_users: int
+    daily_active_users: int
+    monthly_active_users: int
+    total_food_scans: int
+    total_barcode_scans: int
+    total_weight_logs: int
+    recent_signups: List[AdminUserItem]
+
+# Profile & Logs Schemas
 class UserProfileBase(BaseModel):
     name: str = "User"
     age: int = Field(28, ge=1, le=120)
@@ -18,6 +63,7 @@ class UserProfileCreate(UserProfileBase):
 
 class UserProfileResponse(UserProfileBase):
     id: int
+    user_id: int
     daily_calorie_target: int
     protein_target_g: float
     carbs_target_g: float
@@ -44,6 +90,7 @@ class FoodLogCreate(BaseModel):
 
 class FoodLogResponse(FoodLogCreate):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -60,6 +107,7 @@ class CustomFoodCreate(BaseModel):
 
 class CustomFoodResponse(CustomFoodCreate):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -70,6 +118,7 @@ class WaterLogCreate(BaseModel):
 
 class WaterLogResponse(BaseModel):
     id: int
+    user_id: int
     log_date: str
     amount_ml: int
 
@@ -84,6 +133,7 @@ class WeightLogCreate(BaseModel):
 
 class WeightLogResponse(WeightLogCreate):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -103,6 +153,7 @@ class RecipeCreate(BaseModel):
 
 class RecipeResponse(BaseModel):
     id: int
+    user_id: int
     name: str
     servings: int
     calories_per_serving: float
@@ -124,6 +175,7 @@ class FavoriteFoodCreate(BaseModel):
 
 class FavoriteFoodResponse(FavoriteFoodCreate):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True

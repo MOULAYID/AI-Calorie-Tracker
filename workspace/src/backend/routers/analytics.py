@@ -1,23 +1,27 @@
 import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import FoodLog, UserProfile
+from ..models import FoodLog, UserProfile, User
+from ..services.auth import get_current_user_optional
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
 @router.get("/weekly")
 def get_weekly_analytics(
     date: str = Query(..., description="End date in YYYY-MM-DD format"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
+    uid = current_user.id if current_user else 1
+
     try:
         end_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     except ValueError:
         end_date = datetime.date.today()
 
-    profile = db.query(UserProfile).first()
+    profile = db.query(UserProfile).filter(UserProfile.user_id == uid).first()
     target_cal = profile.daily_calorie_target if profile else 2000
 
     daily_stats: List[Dict[str, Any]] = []
@@ -26,13 +30,12 @@ def get_weekly_analytics(
     total_weekly_carbs = 0.0
     total_weekly_fat = 0.0
 
-    # Calculate last 7 days ending at `end_date`
     for i in range(6, -1, -1):
         cur_date = end_date - datetime.timedelta(days=i)
         cur_date_str = cur_date.strftime("%Y-%m-%d")
-        day_name = cur_date.strftime("%a") # Mon, Tue, etc.
+        day_name = cur_date.strftime("%a")
 
-        logs = db.query(FoodLog).filter(FoodLog.log_date == cur_date_str).all()
+        logs = db.query(FoodLog).filter(FoodLog.user_id == uid, FoodLog.log_date == cur_date_str).all()
         cals = sum(item.calories for item in logs)
         prot = sum(item.protein for item in logs)
         carbs = sum(item.carbs for item in logs)
@@ -54,8 +57,6 @@ def get_weekly_analytics(
         })
 
     avg_calories = round(total_weekly_calories / 7.0, 1)
-    
-    # Calculate adherence (days within +-15% of target)
     days_on_target = sum(1 for d in daily_stats if abs(d["calories"] - target_cal) <= (target_cal * 0.15))
     adherence_score = round((days_on_target / 7.0) * 100, 1)
 

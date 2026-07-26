@@ -1,11 +1,24 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text
 from .database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    name = Column(String, default="User")
+    is_admin = Column(Boolean, default=False)
+    is_premium = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    last_login_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     name = Column(String, default="User")
     age = Column(Integer, default=28)
     gender = Column(String, default="female")
@@ -26,6 +39,7 @@ class FoodLog(Base):
     __tablename__ = "food_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     log_date = Column(String, index=True) # YYYY-MM-DD
     meal_type = Column(String, index=True)
     name = Column(String, nullable=False)
@@ -46,6 +60,7 @@ class CustomFood(Base):
     __tablename__ = "custom_foods"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     name = Column(String, index=True, nullable=False)
     brand = Column(String, nullable=True)
     calories_100g = Column(Float, nullable=False)
@@ -60,6 +75,7 @@ class WaterLog(Base):
     __tablename__ = "water_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     log_date = Column(String, index=True)
     amount_ml = Column(Integer, default=250)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -68,7 +84,8 @@ class WeightLog(Base):
     __tablename__ = "weight_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    log_date = Column(String, index=True) # YYYY-MM-DD
+    user_id = Column(Integer, index=True, default=1)
+    log_date = Column(String, index=True)
     weight_kg = Column(Float, nullable=False)
     body_fat_pct = Column(Float, nullable=True)
     notes = Column(String, nullable=True)
@@ -78,6 +95,7 @@ class Recipe(Base):
     __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     name = Column(String, nullable=False)
     servings = Column(Integer, default=1)
     calories_per_serving = Column(Float, nullable=False)
@@ -91,6 +109,7 @@ class FavoriteFood(Base):
     __tablename__ = "favorite_foods"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, default=1)
     name = Column(String, nullable=False)
     brand = Column(String, nullable=True)
     calories_100g = Column(Float, nullable=False)

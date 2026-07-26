@@ -4,9 +4,72 @@ const API_BASE = (hostname === 'localhost' || hostname === '127.0.0.1')
   ? 'http://localhost:8000/api'
   : `http://${hostname}:8000/api`;
 
+export function getAuthToken() {
+  return localStorage.getItem('nutri_token');
+}
+
+export function setAuthToken(token) {
+  if (token) {
+    localStorage.setItem('nutri_token', token);
+  } else {
+    localStorage.removeItem('nutri_token');
+  }
+}
+
+function getAuthHeaders() {
+  const token = getAuthToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export async function registerUser(name, email, password) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Registration failed');
+  }
+  const data = await res.json();
+  setAuthToken(data.access_token);
+  return data;
+}
+
+export async function loginUser(email, password) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || 'Login failed');
+  }
+  const data = await res.json();
+  setAuthToken(data.access_token);
+  return data;
+}
+
+export async function fetchCurrentUser() {
+  const res = await fetch(`${API_BASE}/auth/me`, { headers: getAuthHeaders() });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+export async function fetchAdminStats() {
+  const res = await fetch(`${API_BASE}/admin/stats`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Admin stats failed');
+  return await res.json();
+}
+
 export async function fetchGoals() {
   try {
-    const res = await fetch(`${API_BASE}/goals`);
+    const res = await fetch(`${API_BASE}/goals`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch goals');
     return await res.json();
   } catch (err) {
@@ -18,6 +81,7 @@ export async function fetchGoals() {
       weight_kg: 68.0,
       height_cm: 168.0,
       target_weight_kg: 62.0,
+      target_body_fat_pct: 18.0,
       activity_level: "lightly_active",
       goal_type: "lose",
       daily_calorie_target: 2000,
@@ -32,7 +96,7 @@ export async function fetchGoals() {
 export async function updateGoals(profile) {
   const res = await fetch(`${API_BASE}/goals`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(profile)
   });
   if (!res.ok) throw new Error('Failed to update goals');
@@ -41,7 +105,7 @@ export async function updateGoals(profile) {
 
 export async function fetchFoodLogs(dateStr) {
   try {
-    const res = await fetch(`${API_BASE}/logs?date=${dateStr}`);
+    const res = await fetch(`${API_BASE}/logs?date=${dateStr}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch food logs');
     return await res.json();
   } catch (err) {
@@ -54,7 +118,7 @@ export async function addFoodLog(item) {
   try {
     const res = await fetch(`${API_BASE}/logs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(item)
     });
     if (!res.ok) throw new Error('Failed to add food log');
@@ -71,7 +135,7 @@ export async function addFoodLog(item) {
 
 export async function deleteFoodLog(logId, dateStr) {
   try {
-    await fetch(`${API_BASE}/logs/${logId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/logs/${logId}`, { method: 'DELETE', headers: getAuthHeaders() });
   } catch (err) {
     const existing = JSON.parse(localStorage.getItem(`logs_${dateStr}`) || '[]');
     const updated = existing.filter(i => i.id !== logId);
@@ -81,7 +145,7 @@ export async function deleteFoodLog(logId, dateStr) {
 
 export async function fetchWaterLog(dateStr) {
   try {
-    const res = await fetch(`${API_BASE}/logs/water?date=${dateStr}`);
+    const res = await fetch(`${API_BASE}/logs/water?date=${dateStr}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch water log');
     return await res.json();
   } catch (err) {
@@ -93,7 +157,7 @@ export async function logWater(dateStr, amountMl) {
   try {
     const res = await fetch(`${API_BASE}/logs/water`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ log_date: dateStr, amount_ml: amountMl })
     });
     if (!res.ok) throw new Error('Failed to log water');
@@ -108,7 +172,7 @@ export async function logWater(dateStr, amountMl) {
 
 export async function fetchWeightLogs() {
   try {
-    const res = await fetch(`${API_BASE}/weight`);
+    const res = await fetch(`${API_BASE}/weight`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch weight logs');
     return await res.json();
   } catch (err) {
@@ -120,7 +184,7 @@ export async function logWeight(entry) {
   try {
     const res = await fetch(`${API_BASE}/weight`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(entry)
     });
     if (!res.ok) throw new Error('Failed to log weight');
@@ -136,7 +200,7 @@ export async function logWeight(entry) {
 
 export async function deleteWeightLog(logId) {
   try {
-    await fetch(`${API_BASE}/weight/${logId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/weight/${logId}`, { method: 'DELETE', headers: getAuthHeaders() });
   } catch (err) {
     const existing = JSON.parse(localStorage.getItem('weight_logs') || '[]');
     const updated = existing.filter(i => i.id !== logId);
@@ -146,7 +210,7 @@ export async function deleteWeightLog(logId) {
 
 export async function fetchRecipes() {
   try {
-    const res = await fetch(`${API_BASE}/recipes`);
+    const res = await fetch(`${API_BASE}/recipes`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch recipes');
     return await res.json();
   } catch (err) {
@@ -158,7 +222,7 @@ export async function createRecipe(recipeData) {
   try {
     const res = await fetch(`${API_BASE}/recipes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(recipeData)
     });
     if (!res.ok) throw new Error('Failed to create recipe');
@@ -174,7 +238,7 @@ export async function createRecipe(recipeData) {
 
 export async function deleteRecipe(recipeId) {
   try {
-    await fetch(`${API_BASE}/recipes/${recipeId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/recipes/${recipeId}`, { method: 'DELETE', headers: getAuthHeaders() });
   } catch (err) {
     const existing = JSON.parse(localStorage.getItem('recipes') || '[]');
     const updated = existing.filter(r => r.id !== recipeId);
@@ -184,7 +248,7 @@ export async function deleteRecipe(recipeId) {
 
 export async function searchFoods(query) {
   try {
-    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Search failed');
     return await res.json();
   } catch (err) {
@@ -195,18 +259,22 @@ export async function searchFoods(query) {
 }
 
 export async function createCustomFood(item) {
-  const res = await fetch(`${API_BASE}/search/custom`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
-  });
-  if (!res.ok) throw new Error('Failed to create custom food');
-  return await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/search/custom`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(item)
+    });
+    if (!res.ok) throw new Error('Failed to create custom food');
+    return await res.json();
+  } catch (err) {
+    return { ...item, id: Date.now() };
+  }
 }
 
 export async function scanBarcode(barcode) {
   try {
-    const res = await fetch(`${API_BASE}/scan/barcode?code=${encodeURIComponent(barcode)}`);
+    const res = await fetch(`${API_BASE}/scan/barcode?code=${encodeURIComponent(barcode)}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Barcode scan failed');
     return await res.json();
   } catch (err) {
@@ -227,7 +295,7 @@ export async function scanAiFood(imageBase64) {
   try {
     const res = await fetch(`${API_BASE}/scan/ai-food`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ image_base64: imageBase64 })
     });
     if (!res.ok) throw new Error('AI Scan failed');
@@ -250,7 +318,7 @@ export async function scanAiFood(imageBase64) {
 
 export async function fetchWeeklyAnalytics(dateStr) {
   try {
-    const res = await fetch(`${API_BASE}/analytics/weekly?date=${dateStr}`);
+    const res = await fetch(`${API_BASE}/analytics/weekly?date=${dateStr}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch analytics');
     return await res.json();
   } catch (err) {
