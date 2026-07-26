@@ -12,7 +12,7 @@
 - Instant item breakdown with confidence score rating before logging.
 
 ### 2. 🔍 Barcode & Online Food Database Search (`FEAT-002`, `FEAT-004`)
-- Real-time video barcode scanner for packaged foods using **FatSecret Platform API** and official **OpenFoodFacts Python SDK**.
+- Real-time video barcode scanner for packaged foods using **FatSecret Platform API** and the official [openfoodfacts-python SDK](https://github.com/openfoodfacts/openfoodfacts-python).
 - Typing auto-complete search across millions of global products and USDA lab-verified standard reference nutrition values.
 - Custom serving size scaler and custom food recipe creator.
 
@@ -67,7 +67,7 @@ AI-Calorie-Tracker/
 
 ## ⚡ Tech Stack
 
-- **Backend**: Python 3.14, FastAPI, SQLAlchemy, SQLite, Pydantic v2, Pytest, `google-genai`, `openfoodfacts` SDK, FatSecret OAuth 2.0 API.
+- **Backend**: Python 3.14, FastAPI, SQLAlchemy, SQLite, Pydantic v2, Pytest, `google-genai`, `openfoodfacts` Python SDK, FatSecret OAuth 2.0 API.
 - **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Recharts, PWA Web Manifest.
 - **AI / Computer Vision**: Google Gemini 2.5 Flash Vision.
 
@@ -81,7 +81,7 @@ AI-Calorie-Tracker/
 
 ### 2. Install Dependencies
 ```bash
-# Backend dependencies
+# Backend dependencies (includes openfoodfacts-python SDK)
 pip install -r workspace/src/backend/requirements.txt
 
 # Frontend dependencies
@@ -109,13 +109,6 @@ python run_app.py
    ```
 3. Tap **Share / Menu (`⋮`)** -> **"Add to Home Screen"** to install as a full standalone app!
 
-### USB Debugging (Android Developer Options)
-```bash
-adb reverse tcp:5173 tcp:5173
-adb reverse tcp:8000 tcp:8000
-```
-Open `http://localhost:5173` on your Android phone's Chrome browser.
-
 ---
 
 ## 🧪 Running Automated Tests
@@ -124,7 +117,18 @@ Open `http://localhost:5173` on your Android phone's Chrome browser.
 python -m pytest workspace/src/backend/tests
 ```
 
-All unit tests cover FastAPI routes, BMR calculations, food logging CRUD, weight logs, recipe builder, and analytics.
+All unit tests cover FastAPI routes, BMR calculations, food logging CRUD, weight & body fat logs, recipe builder, and analytics.
+
+---
+
+## 🤝 Acknowledgements & Data Sources
+
+We express our gratitude to the following open data providers and SDK contributors:
+
+- **[Open Food Facts](https://world.openfoodfacts.org/)** & the **[openfoodfacts-python SDK](https://github.com/openfoodfacts/openfoodfacts-python)** contributors for providing the global open food database and official Python SDK.
+- **[FatSecret Platform API](https://platform.fatsecret.com/)** for nutrition search and barcode services.
+- **[Google Gemini AI](https://ai.google.dev/)** for computer vision meal photo recognition.
+- **[USDA FoodData Central](https://fdc.nal.usda.gov/)** for standard reference nutrition data.
 
 ---
 
